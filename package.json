@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mantine/core": "^7.13.2",
+    "@mantine/hooks": "^7.13.2",
+    "@mantine/vanilla-extract": "^7.13.2",
     "@tabler/icons-react": "^3.19.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -17,6 +20,7 @@
     "@biomejs/biome": "1.9.3",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
+    "@vanilla-extract/vite-plugin": "^4.0.16",
     "@vite-pwa/assets-generator": "^0.2.4",
     "@vitejs/plugin-react": "^4.2.1",
     "lefthook": "^1.7.18",

@@ -1,34 +1,34 @@
-import { useState } from "react";
-import appLogo from "/favicon.svg";
+import { AppShell } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import PWABadge from "./PWABadge.tsx";
-import reactLogo from "./assets/react.svg";
-import "./App.css";
+import { Header } from "./components/Header.tsx";
+import { Navbar } from "./components/Navbar.tsx";
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [opened, { toggle }] = useDisclosure();
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-          <img src={appLogo} className="logo" alt="humkey logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>humkey</h1>
-      <div className="card">
-        <button type="button" onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
+    <AppShell
+      header={{ height: 60 }}
+      navbar={{
+        width: 150,
+        breakpoint: "sm",
+        collapsed: { mobile: !opened },
+      }}
+      padding="md"
+    >
+      <AppShell.Header>
+        <Header opened={opened} toggle={toggle} />
+      </AppShell.Header>
+
+      <AppShell.Navbar p="md">
+        <Navbar opened={opened} toggle={toggle} />
+      </AppShell.Navbar>
+
+      <AppShell.Main>Main</AppShell.Main>
+
       <PWABadge />
-    </>
+    </AppShell>
   );
 }
 
