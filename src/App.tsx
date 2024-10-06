@@ -2,6 +2,7 @@ import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import PWABadge from "./PWABadge.tsx";
 import { Header } from "./components/Header.tsx";
+import { Main } from "./components/Main.tsx";
 import { Navbar } from "./components/Navbar.tsx";
 
 function App() {
@@ -25,7 +26,9 @@ function App() {
         <Navbar opened={opened} toggle={toggle} />
       </AppShell.Navbar>
 
-      <AppShell.Main>Main</AppShell.Main>
+      <AppShell.Main>
+        <Main />
+      </AppShell.Main>
 
       <PWABadge />
     </AppShell>
