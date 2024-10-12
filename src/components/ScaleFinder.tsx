@@ -39,6 +39,7 @@ export function ScaleFinder() {
 function tableRowTemplate(scaleName: string, scaleNotes: Note[], similarity: number) {
   return (
     <Table.Tr key={scaleName}>
+      <Table.Td>{`${Math.trunc(Number(similarity) * 100)}%`}</Table.Td>
       <Table.Td>{scaleName}</Table.Td>
       <Table.Td>{scaleNotes[0]}</Table.Td>
       <Table.Td>{scaleNotes[1]}</Table.Td>
@@ -47,7 +48,6 @@ function tableRowTemplate(scaleName: string, scaleNotes: Note[], similarity: num
       <Table.Td>{scaleNotes[4]}</Table.Td>
       <Table.Td>{scaleNotes[5]}</Table.Td>
       <Table.Td>{scaleNotes[6]}</Table.Td>
-      <Table.Td>{`${Math.trunc(Number(similarity) * 100)}%`}</Table.Td>
     </Table.Tr>
   );
 }
@@ -57,6 +57,7 @@ function tableTemplate(rows: JSX.Element[]) {
     <Table highlightOnHover>
       <Table.Thead>
         <Table.Tr>
+          <Table.Th>Similarity</Table.Th>
           <Table.Th>Scale Name</Table.Th>
           <Table.Th>Ⅰ</Table.Th>
           <Table.Th>Ⅱ</Table.Th>
@@ -65,7 +66,6 @@ function tableTemplate(rows: JSX.Element[]) {
           <Table.Th>Ⅴ</Table.Th>
           <Table.Th>Ⅵ</Table.Th>
           <Table.Th>Ⅶ</Table.Th>
-          <Table.Th>Similarity</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>{rows}</Table.Tbody>

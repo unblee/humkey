@@ -62,13 +62,13 @@ export const Tonality = {
 } as const;
 type Tonality = (typeof Tonality)[keyof typeof Tonality];
 
-export type Scale = {
+type Scale = {
   name: string;
   tonality: Tonality;
   notes: Note[];
 };
 
-export type ScaleWithSimilarity = {
+type ScaleWithSimilarity = {
   scale: Scale;
   similarity: number;
 };
