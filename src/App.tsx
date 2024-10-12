@@ -2,8 +2,8 @@ import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import PWABadge from "./PWABadge.tsx";
 import { Header } from "./components/Header.tsx";
-import { Main } from "./components/Main.tsx";
 import { Navbar } from "./components/Navbar.tsx";
+import { ScaleFinder } from "./components/ScaleFinder.tsx";
 
 function App() {
   const [opened, { toggle }] = useDisclosure();
@@ -12,7 +12,7 @@ function App() {
     <AppShell
       header={{ height: 60 }}
       navbar={{
-        width: 150,
+        width: 200,
         breakpoint: "sm",
         collapsed: { mobile: !opened },
       }}
@@ -27,7 +27,7 @@ function App() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Main />
+        <ScaleFinder />
       </AppShell.Main>
 
       <PWABadge />
