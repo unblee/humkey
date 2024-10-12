@@ -1,16 +1,60 @@
-import { Table, Tabs } from "@mantine/core";
-import { Tonality, commonScales, rankingSimilarScales, stringsToNotes } from "../lib/scale.ts";
-import type { Note } from "../lib/scale.ts";
+import { Button, Center, Stack, Table, Tabs, rem } from "@mantine/core";
+import { useMap } from "@mantine/hooks";
+import { Note, Tonality, commonScales, rankingSimilarScales } from "../lib/scale.ts";
 
 export function ScaleFinder() {
-  let inputNotes: Note[];
-  try {
-    inputNotes = stringsToNotes(["C", "D", "E", "F", "G", "A", "B"]);
-  } catch (e) {
-    return <>{e}</>; // TODO(@unblee): ちゃんとエラーハンドリングする
+  const selectedNoteMap = useMap(
+    Object.values(Note).map((note) => {
+      return [note, false];
+    }),
+  );
+
+  return (
+    <Stack align="stretch" justify="flex-start" gap="xl">
+      <Center>
+        <Button.Group>
+          {Array.from(selectedNoteMap.entries()).map(([note, selected]) => {
+            return (
+              <Button
+                key={note}
+                w={rem(100)}
+                onClick={() => {
+                  selected ? selectedNoteMap.set(note, false) : selectedNoteMap.set(note, true);
+                }}
+                variant={selected ? "filled" : "default"}
+                size="md"
+              >
+                {note}
+              </Button>
+            );
+          })}
+        </Button.Group>
+      </Center>
+      <Center>
+        <Button
+          size="sm"
+          onClick={() => {
+            for (const [note] of selectedNoteMap) {
+              selectedNoteMap.set(note, false);
+            }
+          }}
+        >
+          選択解除
+        </Button>
+      </Center>
+      {scaleTables(Array.from(selectedNoteMap))}
+    </Stack>
+  );
+}
+
+function scaleTables(selectedNoteMap: [Note, boolean][]) {
+  const selectedNotes = getSelectedNotes(selectedNoteMap);
+
+  if (selectedNotes.length === 0) {
+    return <Center>音符を入力してください</Center>;
   }
 
-  const ranking = rankingSimilarScales(commonScales, inputNotes);
+  const ranking = rankingSimilarScales(commonScales, selectedNotes);
 
   // Major Scale
   const rankingOnlyMajor = ranking.filter((v) => v.scale.tonality === Tonality.Major);
@@ -34,6 +78,14 @@ export function ScaleFinder() {
       <Tabs.Panel value="natural-minor-scale">{tableTemplate(naturalMinorScaleTableRows)}</Tabs.Panel>
     </Tabs>
   );
+}
+
+function getSelectedNotes(selectedNoteMap: [Note, boolean][]) {
+  const ret: Note[] = [];
+  for (const [note, selected] of selectedNoteMap) {
+    if (selected) ret.push(note);
+  }
+  return ret;
 }
 
 function tableRowTemplate(scaleName: string, scaleNotes: Note[], similarity: number) {
