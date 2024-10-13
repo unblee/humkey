@@ -1,6 +1,116 @@
-import { Button, Center, Stack, Table, Tabs, rem } from "@mantine/core";
+import { Button, Center, Group, Stack, Table, Tabs, Text, rem } from "@mantine/core";
+import type { MantineColor } from "@mantine/core";
+import { Dropzone } from "@mantine/dropzone";
+import type { FileWithPath } from "@mantine/dropzone";
 import { useMap } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import type { NotificationData } from "@mantine/notifications";
+import { IconMusic, IconUpload, IconX } from "@tabler/icons-react";
+import { parseArrayBuffer } from "midi-json-parser";
+import type { IMidiFile } from "midi-json-parser-worker";
 import { Note, Tonality, commonScales, rankingSimilarScales } from "../lib/scale.ts";
+
+type NoteOn = {
+  noteNumber: number;
+  velociry: number;
+};
+
+type SelectedNoteMap = Map<Note, boolean>;
+
+function isMIDINoteNumber(num: number): boolean {
+  return 0 <= num && num <= 127 && Number.isInteger(num);
+}
+
+function noteNumbersToNotes(nums: number[]): Note[] {
+  return nums.map((num) => {
+    if (!isMIDINoteNumber(num))
+      throw new Error(`${num} は MIDI ノート番号ではありません。(0以上かつ127以下である必要があります)`);
+    switch (num % 12) {
+      case 0:
+        return Note.C;
+      case 1:
+        return Note.CsharpDflat;
+      case 2:
+        return Note.D;
+      case 3:
+        return Note.DsharpEflat;
+      case 4:
+        return Note.E;
+      case 5:
+        return Note.F;
+      case 6:
+        return Note.FsharpGflat;
+      case 7:
+        return Note.G;
+      case 8:
+        return Note.GsharpAflat;
+      case 9:
+        return Note.A;
+      case 10:
+        return Note.AsharpBflat;
+      default:
+        // 事前に数値範囲は絞ってるので分岐は列挙できるかつ
+        // switch なので default を記述しないと undefined になってしまうので
+        // 本当は case 11: にしたいが default にしている
+        return Note.B;
+    }
+  });
+}
+
+async function extractNotesFromMIDIFiles(files: FileWithPath[]): Promise<Note[]> {
+  let ret: Note[] = [];
+  for (const fileWithPath of files) {
+    const buf = await fileWithPath.arrayBuffer();
+    let midi: IMidiFile;
+    try {
+      midi = await parseArrayBuffer(buf);
+    } catch (e) {
+      throw new Error(`MIDI ファイル ${fileWithPath.name} を解析できませんでした。${e}`);
+    }
+
+    let noteNumbers: number[] = [];
+    for (const track of midi.tracks) {
+      const notesArray = track.filter((event) => event.noteOn).flatMap((event) => (event.noteOn as NoteOn).noteNumber);
+      noteNumbers = noteNumbers.concat(notesArray);
+    }
+
+    let notes: Note[];
+    try {
+      notes = noteNumbersToNotes(noteNumbers);
+    } catch (e) {
+      throw new Error(`MIDI ファイルに MIDI ノートではないものが含まれていました。${e}`);
+    }
+
+    ret = ret.concat(notes);
+  }
+
+  return [...new Set(ret)];
+}
+
+const notifyData = (color: MantineColor, title: string, message: string): NotificationData => {
+  return { color, title, message, position: "bottom-center", autoClose: 5000 };
+};
+
+const notifyInfo = (title: string, message: string) => {
+  notifications.show(notifyData("green", title, message));
+};
+
+const notifyError = (title: string, message: string) => {
+  notifications.show(notifyData("red", title, message));
+};
+
+function clearSelectedNoteMap(selectedNoteMap: SelectedNoteMap) {
+  notifyInfo("音符の選択", "全て解除しました");
+  for (const [note] of selectedNoteMap) {
+    selectedNoteMap.set(note, false);
+  }
+}
+
+function selectNotes(selectedNoteMap: SelectedNoteMap, notes: Note[]) {
+  for (const note of notes) {
+    selectedNoteMap.set(note, true);
+  }
+}
 
 export function ScaleFinder() {
   const selectedNoteMap = useMap(
@@ -11,6 +121,49 @@ export function ScaleFinder() {
 
   return (
     <Stack align="stretch" justify="flex-start" gap="xl">
+      <Center>
+        <Dropzone
+          onDrop={async (files) => {
+            let notes: Note[] = [];
+            try {
+              notes = await extractNotesFromMIDIFiles(files);
+            } catch (e) {
+              notifyError("MIDI ファイルの読み込み", `失敗しました:\n${e}`);
+            }
+            clearSelectedNoteMap(selectedNoteMap);
+            selectNotes(selectedNoteMap, notes);
+            notifyInfo("MIDI ファイルの読み込み", "反映しました");
+          }}
+          accept={["audio/midi"]}
+          w={rem(1000)}
+        >
+          <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: "none" }}>
+            <Dropzone.Accept>
+              <IconUpload
+                style={{ width: rem(52), height: rem(52), color: "var(--mantine-color-blue-6)" }}
+                stroke={1.5}
+              />
+            </Dropzone.Accept>
+            <Dropzone.Reject>
+              <IconX style={{ width: rem(52), height: rem(52), color: "var(--mantine-color-red-6)" }} stroke={1.5} />
+            </Dropzone.Reject>
+            <Dropzone.Idle>
+              <IconMusic
+                style={{ width: rem(52), height: rem(52), color: "var(--mantine-color-dimmed)" }}
+                stroke={1.5}
+              />
+            </Dropzone.Idle>
+
+            <div>
+              <Text size="md">
+                MIDI ファイルをドラッグ＆ドロップするかクリックしてファイルを選択してください
+                <br />
+                もしくは音符を選択してください
+              </Text>
+            </div>
+          </Group>
+        </Dropzone>
+      </Center>
       <Center>
         <Button.Group>
           {Array.from(selectedNoteMap.entries()).map(([note, selected]) => {
@@ -31,27 +184,20 @@ export function ScaleFinder() {
         </Button.Group>
       </Center>
       <Center>
-        <Button
-          size="sm"
-          onClick={() => {
-            for (const [note] of selectedNoteMap) {
-              selectedNoteMap.set(note, false);
-            }
-          }}
-        >
+        <Button size="sm" onClick={() => clearSelectedNoteMap(selectedNoteMap)}>
           選択解除
         </Button>
       </Center>
-      {scaleTables(Array.from(selectedNoteMap))}
+      {scaleTables(selectedNoteMap)}
     </Stack>
   );
 }
 
-function scaleTables(selectedNoteMap: [Note, boolean][]) {
+function scaleTables(selectedNoteMap: SelectedNoteMap) {
   const selectedNotes = getSelectedNotes(selectedNoteMap);
 
   if (selectedNotes.length === 0) {
-    return <Center>音符を入力してください</Center>;
+    return <Center>音符を選択してください</Center>;
   }
 
   const ranking = rankingSimilarScales(commonScales, selectedNotes);
@@ -70,8 +216,8 @@ function scaleTables(selectedNoteMap: [Note, boolean][]) {
   return (
     <Tabs defaultValue="major-scale">
       <Tabs.List>
-        <Tabs.Tab value="major-scale">Major Scale</Tabs.Tab>
-        <Tabs.Tab value="natural-minor-scale">Natural Minor Scale</Tabs.Tab>
+        <Tabs.Tab value="major-scale">メジャースケール</Tabs.Tab>
+        <Tabs.Tab value="natural-minor-scale">ナチュラルマイナースケール</Tabs.Tab>
       </Tabs.List>
 
       <Tabs.Panel value="major-scale">{tableTemplate(majorScaleTableRows)}</Tabs.Panel>
@@ -80,7 +226,7 @@ function scaleTables(selectedNoteMap: [Note, boolean][]) {
   );
 }
 
-function getSelectedNotes(selectedNoteMap: [Note, boolean][]) {
+function getSelectedNotes(selectedNoteMap: SelectedNoteMap) {
   const ret: Note[] = [];
   for (const [note, selected] of selectedNoteMap) {
     if (selected) ret.push(note);
@@ -109,8 +255,8 @@ function tableTemplate(rows: JSX.Element[]) {
     <Table highlightOnHover>
       <Table.Thead>
         <Table.Tr>
-          <Table.Th>Similarity</Table.Th>
-          <Table.Th>Scale Name</Table.Th>
+          <Table.Th>類似度</Table.Th>
+          <Table.Th>スケール名</Table.Th>
           <Table.Th>Ⅰ</Table.Th>
           <Table.Th>Ⅱ</Table.Th>
           <Table.Th>Ⅲ</Table.Th>

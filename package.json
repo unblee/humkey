@@ -6,13 +6,18 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@mantine/core": "^7.13.2",
+    "@mantine/dropzone": "^7.13.2",
     "@mantine/hooks": "^7.13.2",
+    "@mantine/notifications": "^7.13.2",
     "@mantine/vanilla-extract": "^7.13.2",
     "@tabler/icons-react": "^3.19.0",
+    "midi-json-parser": "^8.1.52",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -27,6 +32,7 @@
     "typescript": "^5.2.2",
     "vite": "^5.2.10",
     "vite-plugin-pwa": "^0.20.0",
+    "vitest": "^2.1.2",
     "workbox-core": "^7.1.0",
     "workbox-window": "^7.1.0"
   },
