@@ -1,12 +1,13 @@
 import { Burger, Group, NavLink } from "@mantine/core";
 import { IconSearch } from "@tabler/icons-react";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-const navLinkItems = [
+const navLinkItems: { icon: typeof IconSearch; label: string; to: string }[] = [
   {
     icon: IconSearch,
     label: "Scale Finder",
-    href: "#fake",
+    to: "/scale-finder",
   },
 ];
 
@@ -17,18 +18,21 @@ type navbarProps = {
 
 export function Navbar({ opened, toggle }: navbarProps) {
   const [active, setActive] = useState(0);
+  const navigate = useNavigate();
 
   return (
     <Group>
       <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
       {navLinkItems.map((item, index) => (
         <NavLink
-          href="#required-for-focus"
           key={item.label}
           active={index === active}
           label={item.label}
           leftSection={<item.icon size="1rem" />}
-          onClick={() => setActive(index)}
+          onClick={() => {
+            setActive(index);
+            navigate({ to: item.to });
+          }}
         />
       ))}
     </Group>
