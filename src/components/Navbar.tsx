@@ -5,7 +5,7 @@ import { useState } from "react";
 const navLinkItems = [
   {
     icon: IconSearch,
-    label: "Find Scale",
+    label: "Scale Finder",
     href: "#fake",
   },
 ];

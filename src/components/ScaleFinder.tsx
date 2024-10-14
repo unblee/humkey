@@ -23,8 +23,7 @@ function isMIDINoteNumber(num: number): boolean {
 
 function noteNumbersToNotes(nums: number[]): Note[] {
   return nums.map((num) => {
-    if (!isMIDINoteNumber(num))
-      throw new Error(`${num} は MIDI ノート番号ではありません。(0以上かつ127以下である必要があります)`);
+    if (!isMIDINoteNumber(num)) throw new Error(`${num} is invalid midi note number (required 0 <= num <= 127)`);
     switch (num % 12) {
       case 0:
         return Note.C;
@@ -65,7 +64,7 @@ async function extractNotesFromMIDIFiles(files: FileWithPath[]): Promise<Note[]>
     try {
       midi = await parseArrayBuffer(buf);
     } catch (e) {
-      throw new Error(`MIDI ファイル ${fileWithPath.name} を解析できませんでした。${e}`);
+      throw new Error(`failed to parse midi file ${fileWithPath.name}`, { cause: e });
     }
 
     let noteNumbers: number[] = [];
@@ -78,7 +77,7 @@ async function extractNotesFromMIDIFiles(files: FileWithPath[]): Promise<Note[]>
     try {
       notes = noteNumbersToNotes(noteNumbers);
     } catch (e) {
-      throw new Error(`MIDI ファイルに MIDI ノートではないものが含まれていました。${e}`);
+      throw new Error("contained an invalid note number", { cause: e });
     }
 
     ret = ret.concat(notes);
@@ -87,20 +86,28 @@ async function extractNotesFromMIDIFiles(files: FileWithPath[]): Promise<Note[]>
   return [...new Set(ret)];
 }
 
-const notifyData = (color: MantineColor, title: string, message: string): NotificationData => {
+function notifyData({
+  color,
+  title,
+  message,
+}: {
+  color: MantineColor;
+  title: string;
+  message: string;
+}): NotificationData {
   return { color, title, message, position: "bottom-center", autoClose: 5000 };
-};
+}
 
-const notifyInfo = (title: string, message: string) => {
-  notifications.show(notifyData("green", title, message));
-};
+function notifyInfo({ title, message }: { title: string; message: string }) {
+  notifications.show(notifyData({ color: "green", title, message }));
+}
 
-const notifyError = (title: string, message: string) => {
-  notifications.show(notifyData("red", title, message));
-};
+function notifyError({ title, message }: { title: string; message: string }) {
+  notifications.show(notifyData({ color: "red", title, message }));
+}
 
 function clearSelectedNoteMap(selectedNoteMap: SelectedNoteMap) {
-  notifyInfo("音符の選択", "全て解除しました");
+  notifyInfo({ title: "音符の選択", message: "全て解除しました" });
   for (const [note] of selectedNoteMap) {
     selectedNoteMap.set(note, false);
   }
@@ -128,11 +135,12 @@ export function ScaleFinder() {
             try {
               notes = await extractNotesFromMIDIFiles(files);
             } catch (e) {
-              notifyError("MIDI ファイルの読み込み", `失敗しました:\n${e}`);
+              console.debug("failed to extract notes from MIDI files", e);
+              notifyError({ title: "MIDI ファイルの読み込み", message: "失敗しました" });
             }
             clearSelectedNoteMap(selectedNoteMap);
             selectNotes(selectedNoteMap, notes);
-            notifyInfo("MIDI ファイルの読み込み", "反映しました");
+            notifyInfo({ title: "MIDI ファイルの読み込み", message: "反映しました" });
           }}
           accept={["audio/midi"]}
           w={rem(1000)}
