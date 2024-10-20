@@ -222,15 +222,17 @@ function scaleTables(selectedNoteMap: SelectedNoteMap) {
   );
 
   return (
-    <Tabs defaultValue="major-scale">
-      <Tabs.List>
-        <Tabs.Tab value="major-scale">メジャースケール</Tabs.Tab>
-        <Tabs.Tab value="natural-minor-scale">ナチュラルマイナースケール</Tabs.Tab>
-      </Tabs.List>
+    <Center>
+      <Tabs defaultValue="major-scale" w={rem(1500)}>
+        <Tabs.List>
+          <Tabs.Tab value="major-scale">メジャースケール</Tabs.Tab>
+          <Tabs.Tab value="natural-minor-scale">ナチュラルマイナースケール</Tabs.Tab>
+        </Tabs.List>
 
-      <Tabs.Panel value="major-scale">{tableTemplate(majorScaleTableRows)}</Tabs.Panel>
-      <Tabs.Panel value="natural-minor-scale">{tableTemplate(naturalMinorScaleTableRows)}</Tabs.Panel>
-    </Tabs>
+        <Tabs.Panel value="major-scale">{tableTemplate(majorScaleTableRows)}</Tabs.Panel>
+        <Tabs.Panel value="natural-minor-scale">{tableTemplate(naturalMinorScaleTableRows)}</Tabs.Panel>
+      </Tabs>
+    </Center>
   );
 }
 
@@ -264,7 +266,7 @@ function tableTemplate(rows: JSX.Element[]) {
       <Table.Thead>
         <Table.Tr>
           <Table.Th>類似度</Table.Th>
-          <Table.Th>スケール名</Table.Th>
+          <Table.Th w={rem(300)}>スケール名</Table.Th> {/* タブの切り替えで幅が変わって見た目が悪いので固定 */}
           <Table.Th>Ⅰ</Table.Th>
           <Table.Th>Ⅱ</Table.Th>
           <Table.Th>Ⅲ</Table.Th>

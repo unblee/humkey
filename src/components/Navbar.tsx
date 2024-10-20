@@ -1,5 +1,5 @@
 import { Burger, Group, NavLink } from "@mantine/core";
-import { IconSearch } from "@tabler/icons-react";
+import { IconSearch, IconStack2 } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -8,6 +8,11 @@ const navLinkItems: { icon: typeof IconSearch; label: string; to: string }[] = [
     icon: IconSearch,
     label: "Scale Finder",
     to: "/scale-finder",
+  },
+  {
+    icon: IconStack2,
+    label: "Diatonic Chords",
+    to: "/diatonic-chords",
   },
 ];
 
