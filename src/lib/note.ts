@@ -291,38 +291,6 @@ class Note {
   diminishedFourteenth(): Note | undefined {
     return this.majorThirteenth();
   }
-
-  // Add 22 half step
-  minorFourteenth(): Note | undefined {
-    return this.shiftHalfStep(22);
-  }
-  augmentedThirteenth(): Note | undefined {
-    return this.minorFourteenth();
-  }
-
-  // Add 23 half step
-  majorFourteenth(): Note | undefined {
-    return this.shiftHalfStep(23);
-  }
-  diminishedFifteenth(): Note | undefined {
-    return this.majorFourteenth();
-  }
-
-  // Add 24 half step
-  perfectFifteenth(): Note | undefined {
-    return this.shiftHalfStep(24);
-  }
-  doubleOctave(): Note | undefined {
-    return this.perfectFifteenth();
-  }
-  augmentedFourteenth(): Note | undefined {
-    return this.perfectFifteenth();
-  }
-
-  // Add 25 half step
-  augmentedFifteenth(): Note | undefined {
-    return this.shiftHalfStep(25);
-  }
 }
 
 const NoteBaseC = new Note(0);
@@ -348,6 +316,8 @@ function parseChordStructureNotes(notes: (Note | undefined)[]): ChordStructureNo
     if (!note) return undefined;
     ret.push(note);
   }
+  ret.sort((a, b) => a.noteNumber - b.noteNumber);
+
   // biome-ignore lint/style/noNonNullAssertion:
   return [ret.at(0)!, ret.at(1)!, ...ret.slice(2)];
 }
@@ -358,8 +328,42 @@ class Chord {
     readonly structureNotes: ChordStructureNotes,
   ) {}
 
-  spread(): (Note | undefined)[] {
-    return [...this.structureNotes];
+  root(): Note {
+    // biome-ignore lint/style/noNonNullAssertion:
+    return this.structureNotes.at(0)!;
+  }
+
+  private omit(chordName: string, omitNotes: (Note | undefined)[]): Chord | undefined {
+    if (this.structureNotes.length <= 2) return undefined;
+
+    const definedOmitNotes: Note[] = [];
+    for (const omitNote of omitNotes) {
+      if (!omitNote) return undefined;
+      definedOmitNotes.push(omitNote);
+    }
+
+    const isOmit = (note: Note): boolean => {
+      return definedOmitNotes.map((omitNote) => omitNote.noteNumber).includes(note.noteNumber);
+    };
+
+    const returnNotes: Note[] = [];
+    for (const note of this.structureNotes) {
+      if (isOmit(note)) continue;
+      returnNotes.push(note);
+    }
+
+    const chordStructureNotes = parseChordStructureNotes(returnNotes);
+    if (!chordStructureNotes) return undefined;
+
+    return new Chord(chordName, chordStructureNotes);
+  }
+
+  omit3(): Chord | undefined {
+    return this.omit(`${this.name}(omit3)`, [this.root().majorThird(), this.root().minorThird()]);
+  }
+
+  omit5(): Chord | undefined {
+    return this.omit(`${this.name}(omit5)`, [this.root().perfectFifth()]);
   }
 
   // オクターブ番号は YAMAHA 式の C-2=0, C3=60, G8=127 を用いる
@@ -373,6 +377,15 @@ class Chord {
     const chordStructureNotes = parseChordStructureNotes(changedOctaveNotes);
     if (!chordStructureNotes) return undefined;
     return new Chord(this.name, chordStructureNotes);
+  }
+
+  // --------------- Dyad Chords ---------------
+
+  static powerChord(base: Note): Chord | undefined {
+    const name = base.name;
+    const structureNotes = parseChordStructureNotes([base, base.perfectFifth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
   }
 
   // --------------- Triad Chords ---------------
@@ -522,55 +535,170 @@ class Chord {
   // --------------- Extended Chord ---------------
 
   static dominantNinth(base: Note): Chord | undefined {
-    const name = `${base.name}9`;
+    const name = `${base.name}dom9`;
     const dominantSeventh = Chord.dominantSeventh(base);
     if (!dominantSeventh) return undefined;
-    const structureNotes = parseChordStructureNotes([...dominantSeventh.spread(), base.majorNinth()]);
+    const structureNotes = parseChordStructureNotes([...dominantSeventh.structureNotes, base.majorNinth()]);
     if (!structureNotes) return undefined;
     return new Chord(name, structureNotes);
   }
 
-  static dominantEleventh(base: Note): Chord | undefined {}
+  static dominantEleventh(base: Note): Chord | undefined {
+    const name = `${base.name}dom11`;
+    const dominantSeventh = Chord.dominantSeventh(base);
+    if (!dominantSeventh) return undefined;
+    const dominantSeventhOmit3 = dominantSeventh.omit3();
+    if (!dominantSeventhOmit3) return undefined;
+    const structureNotes = parseChordStructureNotes([
+      ...dominantSeventhOmit3.structureNotes,
+      base.majorNinth(),
+      base.perfectEleventh(),
+    ]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static dominantThirteenth(base: Note): Chord | undefined {}
-
-  static dominantThirteenth(base: Note): Chord | undefined {}
+  static dominantThirteenth(base: Note): Chord | undefined {
+    const name = `${base.name}dom13`;
+    const dominantSeventh = Chord.dominantSeventh(base);
+    if (!dominantSeventh) return undefined;
+    const structureNotes = parseChordStructureNotes([
+      ...dominantSeventh.structureNotes,
+      base.majorNinth(),
+      base.majorThirteenth(),
+    ]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
   // --------------- Altered Chord ---------------
 
-  static seventhAugmentedFifth(base: Note): Chord | undefined {}
+  static seventhAugmentedFifth(base: Note): Chord | undefined {
+    const name = `${base.name}7#5`;
+    const dominantSeventh = Chord.dominantSeventh(base);
+    if (!dominantSeventh) return undefined;
+    const dominantSeventhOmit5 = dominantSeventh.omit5();
+    if (!dominantSeventhOmit5) return undefined;
+    const structureNotes = parseChordStructureNotes([...dominantSeventhOmit5.structureNotes, base.augmentedFifth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static seventhMinorNinth(base: Note): Chord | undefined {}
+  static seventhMinorNinth(base: Note): Chord | undefined {
+    const name = `${base.name}7♭9`;
+    const dominantSeventh = Chord.dominantSeventh(base);
+    if (!dominantSeventh) return undefined;
+    const structureNotes = parseChordStructureNotes([...dominantSeventh.structureNotes, base.minorNinth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static seventhSharpNinth(base: Note): Chord | undefined {}
+  static seventhSharpNinth(base: Note): Chord | undefined {
+    const name = `${base.name}7#9`;
+    const dominantSeventh = Chord.dominantSeventh(base);
+    if (!dominantSeventh) return undefined;
+    const structureNotes = parseChordStructureNotes([...dominantSeventh.structureNotes, base.augmentedNinth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static seventhAugmentedEleventh(base: Note): Chord | undefined {}
+  static seventhAugmentedEleventh(base: Note): Chord | undefined {
+    const name = `${base.name}7#11`;
+    const dominantSeventh = Chord.dominantSeventh(base);
+    if (!dominantSeventh) return undefined;
+    const structureNotes = parseChordStructureNotes([...dominantSeventh.structureNotes, base.augmentedEleventh()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static seventhDiminishedThirteenth(base: Note): Chord | undefined {}
+  static seventhDiminishedThirteenth(base: Note): Chord | undefined {
+    const name = `${base.name}7♭13`;
+    const dominantSeventh = Chord.dominantSeventh(base);
+    if (!dominantSeventh) return undefined;
+    const structureNotes = parseChordStructureNotes([...dominantSeventh.structureNotes, base.minorThirteenth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static halfDiminishedSeventh(base: Note): Chord | undefined {}
+  // --------------- Added tone Chord ---------------
 
-  // --------------- Altered Chord ---------------
+  static addNine(base: Note): Chord | undefined {
+    const name = `${base.name}add9`;
+    const majorTriad = Chord.majorTriad(base);
+    if (!majorTriad) return undefined;
+    const structureNotes = parseChordStructureNotes([...majorTriad.structureNotes, base.majorNinth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static addNine(base: Note): Chord | undefined {}
+  static addEleventh(base: Note): Chord | undefined {
+    const name = `${base.name}add11`;
+    const majorTriad = Chord.majorTriad(base);
+    if (!majorTriad) return undefined;
+    const structureNotes = parseChordStructureNotes([...majorTriad.structureNotes, base.perfectFourth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static addFourth(base: Note): Chord | undefined {}
+  static sixNine(base: Note): Chord | undefined {
+    const name = `${base.name}6/9`;
+    const majorTriad = Chord.majorTriad(base);
+    if (!majorTriad) return undefined;
+    const structureNotes = parseChordStructureNotes([
+      ...majorTriad.structureNotes,
+      base.majorSixth(),
+      base.majorNinth(),
+    ]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static addSixth(base: Note): Chord | undefined {}
-
-  static sixNine(base: Note): Chord | undefined {}
-
-  static sevenSix(base: Note): Chord | undefined {}
-
-  static mixedThird(base: Note): Chord | undefined {}
+  static sevenSix(base: Note): Chord | undefined {
+    const name = `${base.name}7/6`;
+    const majorTriad = Chord.majorTriad(base);
+    if (!majorTriad) return undefined;
+    const structureNotes = parseChordStructureNotes([
+      ...majorTriad.structureNotes,
+      base.majorSixth(),
+      base.minorSeventh(),
+    ]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
   // --------------- Suspended Chord ---------------
 
-  static suspendedSecond(base: Note): Chord | undefined {}
+  static suspendedSecond(base: Note): Chord | undefined {
+    const name = `${base.name}sus2`;
+    const powerChord = Chord.powerChord(base);
+    if (!powerChord) return undefined;
+    const structureNotes = parseChordStructureNotes([...powerChord.structureNotes, base.majorSecond()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static suspendedFourth(base: Note): Chord | undefined {}
+  static suspendedFourth(base: Note): Chord | undefined {
+    const name = `${base.name}sus4`;
+    const powerChord = Chord.powerChord(base);
+    if (!powerChord) return undefined;
+    const structureNotes = parseChordStructureNotes([...powerChord.structureNotes, base.perfectFourth()]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 
-  static jazzSus(base: Note): Chord | undefined {}
+  static ninthSuspendedFourth(base: Note): Chord | undefined {
+    const name = `${base.name}9sus4`;
+    const powerChord = Chord.powerChord(base);
+    if (!powerChord) return undefined;
+    const structureNotes = parseChordStructureNotes([
+      ...powerChord.structureNotes,
+      base.perfectFourth(),
+      base.minorSeventh(),
+      base.majorNinth(),
+    ]);
+    if (!structureNotes) return undefined;
+    return new Chord(name, structureNotes);
+  }
 }
 
 class Scale {
